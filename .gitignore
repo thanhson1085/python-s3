@@ -1,0 +1,4 @@
+env
+*.swo
+*.swp
+__pycache__
