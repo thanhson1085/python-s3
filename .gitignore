@@ -2,3 +2,4 @@ env
 *.swo
 *.swp
 __pycache__
+config.py

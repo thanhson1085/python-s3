@@ -1,2 +1,3 @@
 Flask
 boto3
+flask-swagger

@@ -1,0 +1,4 @@
+AWS_APP_ID = ""
+AWS_APP_SECRET = ""
+AWS_REGION = "ap-southeast-1"
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
