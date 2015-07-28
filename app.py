@@ -2,11 +2,12 @@ from flask import Flask, jsonify
 from werkzeug import secure_filename
 import config as cfg
 import boto3
-from boto3.s3.transer import S3Transfer
+from boto3.s3.transfer import S3Transfer
 
 AWS_BUCKET = "test-upload"
 app = Flask("python_s3")
 
+# upload image api
 @app.route("/upload", methods=['POST'])
 def upload():
     """
@@ -61,9 +62,40 @@ def upload():
 
     return jsonify({'test': 'test'})
 
-@app.route("/download", methods=['POST'])
-def download():
-    return jsonify({'test': 'test'})
+# down load image
+@app.route("/download/<image>", methods=['POST'])
+def download(image):
+
+    key = secure_filename(image)
+
+    # if file was stored in local
+    if not os.path.exists(cfg.BASE_ROOT + "/" + key):
+        transfer = S3Transfer(boto3.client('s3', cfg.AWS_REGION, aws_access_key_id=cfg.AWS_APP_ID,
+                    aws_secret_access_key=cfg.AWS_APP_SECRET))
+        # download file from aws
+        transfer.download_file(AWS_BUCKET, key, key)
+
+    return send_file(cfg.BASE_ROOT + "/" + key, mimetype='image/gif')
+
+# Swagger Doccument for API
+@app.route('/docs')
+def spec():
+    swag = swagger(app)
+    swag['info']['version'] = "1.0"
+    swag['info']['title'] = "Python S3 API"
+    swag['basePath'] = "/"
+    return jsonify(swag)
+
+# Cross origin
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin','*')
+    response.headers.add('Access-Control-Allow-Headers', "Authorization, Content-Type")
+    response.headers.add('Access-Control-Expose-Headers', "Authorization")
+    response.headers.add('Access-Control-Allow-Methods', "GET, POST, PUT, DELETE, OPTIONS")
+    response.headers.add('Access-Control-Allow-Credentials', "true")
+    response.headers.add('Access-Control-Max-Age', 60 * 60 * 24 * 20)
+    return response
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -71,4 +103,3 @@ def allowed_file(filename):
 
 if (__name__ == "__main__" ):
     app.run()
-
