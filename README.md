@@ -14,5 +14,5 @@ pip install -r requirements.txt
 ## Run
 ```
 . env/bin/activate
-python app
+python app.py
 ```
