@@ -1,11 +1,13 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request, send_file
 from werkzeug import secure_filename
 import config as cfg
-import boto3
+import boto3, os, time
 from boto3.s3.transfer import S3Transfer
+from flask_swagger import swagger
 
-AWS_BUCKET = "test-upload"
+AWS_BUCKET = "test-upload-python-s3"
 app = Flask("python_s3")
+app.debug = True
 
 # upload image api
 @app.route("/upload", methods=['POST'])
@@ -23,12 +25,6 @@ def upload():
             paramType: body
             dataType: file
             type: file
-        -   name: files[]
-            in: formData
-            required: false
-            paramType: body
-            dataType: file
-            type: file
 
     responses:
         200:
@@ -42,10 +38,9 @@ def upload():
     """
     uploaded_files = request.files.getlist("files[]")
     for upload_file in uploaded_files:
-        if upload_file and allowed_file(file.filename):
-            filename = secure_filename(upload_file.filename)
+        if upload_file and allowed_file(upload_file.filename):
+            filename = secure_filename(str(time.time()) + upload_file.filename)
 
-            username = app.current_user['username']
             dir_name = 'uploads/'
             if not os.path.exists(dir_name):
                 os.makedirs(dir_name)
@@ -60,22 +55,20 @@ def upload():
 
             transfer.upload_file(file_path, AWS_BUCKET, file_path)
 
-    return jsonify({'test': 'test'})
+    return jsonify({'success': 1})
 
 # down load image
-@app.route("/download/<image>", methods=['POST'])
+@app.route("/download/<image>", methods=['GET'])
 def download(image):
+    key = 'uploads/' + secure_filename(image)
+    UPLOAD_DIR = os.path.abspath(os.path.join(os.path.split(__file__)[0], ''))
+    # get file from S3
+    transfer = S3Transfer(boto3.client('s3', cfg.AWS_REGION, aws_access_key_id=cfg.AWS_APP_ID,
+                aws_secret_access_key=cfg.AWS_APP_SECRET))
+    # download file from aws
+    transfer.download_file(AWS_BUCKET, key, key)
 
-    key = secure_filename(image)
-
-    # if file was stored in local
-    if not os.path.exists(cfg.BASE_ROOT + "/" + key):
-        transfer = S3Transfer(boto3.client('s3', cfg.AWS_REGION, aws_access_key_id=cfg.AWS_APP_ID,
-                    aws_secret_access_key=cfg.AWS_APP_SECRET))
-        # download file from aws
-        transfer.download_file(AWS_BUCKET, key, key)
-
-    return send_file(cfg.BASE_ROOT + "/" + key, mimetype='image/gif')
+    return send_file(UPLOAD_DIR + "/" + key, mimetype='image/gif')
 
 # Swagger Doccument for API
 @app.route('/docs')
@@ -102,4 +95,4 @@ def allowed_file(filename):
        filename.rsplit('.', 1)[1] in cfg.ALLOWED_EXTENSIONS
 
 if (__name__ == "__main__" ):
-    app.run()
+    app.run('0.0.0.0')
