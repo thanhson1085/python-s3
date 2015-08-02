@@ -1,5 +1,10 @@
 This is a simple example to upload and download file from Amazon S3 by using Python Flask.
 
+### Requirements
+- flask
+- flask-swagger
+- boto3
+
 ### Installation
 
 ```
@@ -17,5 +22,5 @@ python app.py
 ```
 
 ### Test
-In default, you can use Swagger UI to test Upload API. The link for swagger schema is http://localhost/docs
+In default, you can use Swagger UI to test Upload API. The link for swagger schema is http://localhost:5000/docs
 
